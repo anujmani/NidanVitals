@@ -1,7 +1,9 @@
 package com.example.vitalsapplication.controller;
 
+import com.example.vitalsapplication.model.VitalsObservationEntity;
 import com.example.vitalsapplication.service.VitalService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,5 +24,13 @@ public class VitalsController {
         List<Map<String, Object>> vitalsObservation = vitalService.getObservations(patient_id, risk);
         return ResponseEntity.ok(vitalsObservation);
 
+    }
+
+    @PostMapping
+    public ResponseEntity<VitalsObservationEntity> addRecordObservation(@RequestParam String patientId,
+                                                                        @RequestBody String data) {
+        VitalsObservationEntity saved = vitalService.saveObservationFromJson(patientId, data);
+
+        return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 }

@@ -21,7 +21,7 @@ public class VitalServiceImpl implements VitalService {
     private final IParser parser = ctx.newJsonParser();
 
     @Override
-    public List<Map<String, Object>> getObservations(String patientId, String riskFilter) {
+    public List<Map<String, Object>> getObservations(String patientId, String riskFilter) { //Data for Dashboard
         List<VitalsObservationEntity> entities = patientId != null ?
                 vitalsObservationRepo.findByPatientId(patientId) : vitalsObservationRepo.findAll();
         List<Map<String, Object>> results = new ArrayList<>();
@@ -55,6 +55,11 @@ public class VitalServiceImpl implements VitalService {
             results.add(result);
         }
         return results;
+    }
+
+    @Override
+    public VitalsObservationEntity saveObservationFromJson(String patientId, String data) {
+        return null;
     }
 
     private String getBmiCategory(Double bmi) {
