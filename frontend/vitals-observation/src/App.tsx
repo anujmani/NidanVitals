@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import './App.css'
+import Dashboard from "./DashboardComponent/Dashboard";
+
+
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <div className='text-xl'>
-      Nidan Vitals
+    <div >
+      <h1>
+        Nidan Vitals
+      </h1>
+      <Dashboard />
+      
     </div>
   )
 }
