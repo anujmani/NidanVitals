@@ -4,7 +4,10 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import com.example.vitalsapplication.model.VitalsObservationEntity;
 import com.example.vitalsapplication.repo.VitalsObservationRepo;
+import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Quantity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -59,7 +62,34 @@ public class VitalServiceImpl implements VitalService {
 
     @Override
     public VitalsObservationEntity saveObservationFromJson(String patientId, String data) {
-        return null;
+        Observation obs = parser.parseResource(Observation.class, data);
+        if (!"85353-1".equals(obs.getCode().getCodingFirstRep().getCode())) {
+            throw new IllegalArgumentException("Invalid LOINC code");
+        }
+        double height = 0, weight = 0, bmi = 0;
+        boolean hasBmi = false;
+        for (Observation.ObservationComponentComponent comp : obs.getComponent()) {
+            String code = comp.getCode().getCodingFirstRep().getCode();
+            double value = ((Quantity) comp.getValue()).getValue().doubleValue();
+            if ("8302-2".equals(code)) height = value;
+            else if ("29463-7".equals(code)) weight = value;
+            else if ("39156-5".equals(code)) {
+                bmi = value;
+                hasBmi = true;
+            }
+        }
+        if (!hasBmi && height > 0 && weight > 0) {
+            bmiCalculator(obs,height,weight);
+        }
+
+
+        // Create and save the entity
+        VitalsObservationEntity entity = new VitalsObservationEntity();
+        entity.setPatientId(patientId);
+        entity.setData(parser.encodeResourceToString(obs));  // Store updated FHIR JSON
+        return vitalsObservationRepo.save(entity);  // Save and return the entity
+
+
     }
 
     private String getBmiCategory(Double bmi) {
@@ -68,6 +98,23 @@ public class VitalServiceImpl implements VitalService {
         if (bmi < 25) return "Normal";
         if (bmi < 30) return "Overweight";
         return "Obese";
+    }
+    private Observation bmiCalculator(Observation obs,double height, double weight){
+        double bmi = weight / Math.pow(height / 100, 2);
+        Quantity bmiQuantity = new Quantity().setValue(bmi).setUnit("kg/m2").setSystem("http://unitsofmeasure" +
+                ".org").setCode("kg/m2");
+        Observation.ObservationComponentComponent bmiComp = new Observation.ObservationComponentComponent();
+
+        Coding bmiCoding = new Coding()
+                .setSystem("http://loinc.org")
+                .setCode("39156-5")
+                .setDisplay("BMI");
+        CodeableConcept bmiCodeable = new CodeableConcept()
+                .addCoding(bmiCoding);
+        bmiComp.setCode(bmiCodeable);
+        bmiComp.setValue(bmiQuantity);
+        obs.addComponent(bmiComp);
+        return obs;
     }
 
 }
